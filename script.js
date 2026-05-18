@@ -24,14 +24,22 @@ let dragPlotOrigin = { x: 0, y: 0 };
 let resizePlot = null;
 let resizeStart = { x: 0, y: 0 };
 let resizeOrigin = { w: 0, h: 0 };
+let resizeMin = { w: 80, h: 60 };
 
 document.addEventListener('mousedown', e => {
-    if (e.target.closest('a, input, button, select, textarea, label')) return;
+    if (e.target.closest('input, button, select, textarea, label')) return;
 
     if (e.target.classList.contains('resize-handle')) {
         resizePlot = e.target.closest('.plot');
         resizeStart = { x: e.clientX, y: e.clientY };
         resizeOrigin = { w: resizePlot.offsetWidth, h: resizePlot.offsetHeight };
+        const sw = resizePlot.style.width;
+        const sh = resizePlot.style.height;
+        resizePlot.style.width = 'min-content';
+        resizePlot.style.height = 'min-content';
+        resizeMin = { w: resizePlot.offsetWidth, h: resizePlot.offsetHeight };
+        resizePlot.style.width = sw;
+        resizePlot.style.height = sh;
         document.body.classList.add('is-dragging');
         return;
     }
@@ -42,6 +50,7 @@ document.addEventListener('mousedown', e => {
         dragPlotStart = { x: e.clientX, y: e.clientY };
         dragPlotOrigin = { x: parseInt(plot.style.left), y: parseInt(plot.style.top) };
         document.body.classList.add('is-dragging');
+        e.preventDefault();
         return;
     }
 
@@ -54,8 +63,8 @@ document.addEventListener('mousemove', e => {
     if (resizePlot) {
         const dw = (e.clientX - resizeStart.x) / zoom;
         const dh = (e.clientY - resizeStart.y) / zoom;
-        resizePlot.style.width = Math.max(80, resizeOrigin.w + dw) + 'px';
-        resizePlot.style.height = Math.max(60, resizeOrigin.h + dh) + 'px';
+        resizePlot.style.width = Math.max(resizeMin.w, resizeOrigin.w + dw) + 'px';
+        resizePlot.style.height = Math.max(resizeMin.h, resizeOrigin.h + dh) + 'px';
         return;
     }
     if (dragPlot) {
@@ -70,7 +79,15 @@ document.addEventListener('mousemove', e => {
     pan.y = panStart.y + (e.clientY - dragStart.y);
     applyTransform();
 });
-document.addEventListener('mouseup', () => {
+document.addEventListener('mouseup', e => {
+    if (dragPlot) {
+        const dx = e.clientX - dragPlotStart.x;
+        const dy = e.clientY - dragPlotStart.y;
+        if (Math.hypot(dx, dy) < 5) {
+            const link = dragPlot.querySelector('a');
+            if (link) window.location.href = link.href;
+        }
+    }
     dragging = false;
     dragPlot = null;
     resizePlot = null;

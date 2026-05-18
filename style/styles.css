@@ -49,6 +49,12 @@ body.is-dragging * {
     padding: 12px;
     cursor: grab;
     transition: box-shadow 0.2s;
+    overflow: hidden;
+}
+
+.plot > * {
+    min-width: 0;
+    min-height: 0;
 }
 
 .plot .resize-handle {
@@ -79,6 +85,11 @@ body.is-dragging * {
 .plot a {
     color: var(--fg);
     text-decoration: none;
+}
+
+.plot a,
+.plot img {
+    pointer-events: none;
 }
 
 #coords {
