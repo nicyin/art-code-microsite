@@ -17,5 +17,25 @@
         "tagline": "Consensus: On Fragments and Formations",
         "image": "https://storage.googleapis.com/xa-li-com/assets/media/2025/consensus/xali_consensus_2025_015.jpg",
         "accent": "red"
+    },
+    {
+        "name": "Karlie Zhao",
+        "slug": "karlie",
+        "tagline": "Sounding Textiles",
+        "image": "members/karlie/assets/01sm.png",
+        "accent": "#f9ff4c"
+    },
+    {
+        "name": "Aurora Mititelu",
+        "slug": "aurora",
+        "tagline": "computer images, AI, and physical installations",
+        "accent": "#7aa6ff"
+    },
+    {
+        "name": "Nicci Yin",
+        "slug": "nicci",
+        "tagline": "Notes on misusing interfaces",
+        "image": "members/nicci/assets/test.png",
+        "accent": "white"
     }
 ]

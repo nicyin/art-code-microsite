@@ -159,24 +159,48 @@ async function init() {
         [members[i], members[j]] = [members[j], members[i]];
     }
 
-    // build grid
+    // central region for member plots
+    const PLOT_W = 2200;
+    const PLOT_H = 1600;
+    const PLOT_X = (CANVAS_W - PLOT_W) / 2;
+    const PLOT_Y = (CANVAS_H - PLOT_H) / 2;
+
+    // frame band around the plot region
+    const FRAME_GAP = 80;
+    const FRAME_THICK = 380;
+
+    const targetW = PLOT_W + 2 * (FRAME_GAP + FRAME_THICK);
+    const targetH = PLOT_H + 2 * (FRAME_GAP + FRAME_THICK);
+    const fitZoom = Math.min(window.innerWidth / targetW, window.innerHeight / targetH) * 0.95;
+    zoom = Math.max(0.3, Math.min(1, fitZoom));
+    pan.x = window.innerWidth / 2 - (PLOT_X + PLOT_W / 2) * zoom;
+    pan.y = window.innerHeight / 2 - (PLOT_Y + PLOT_H / 2) * zoom;
+
+    // build grid inside the centered plot region
     const cols = Math.ceil(Math.sqrt(members.length));
     const rows = Math.ceil(members.length / cols);
-    const cellW = (CANVAS_W - 200) / cols;
-    const cellH = (CANVAS_H - 200) / rows;
+    const cellW = PLOT_W / cols;
+    const cellH = PLOT_H / rows;
 
     const placed = [];
 
     members.forEach((m, i) => {
         const col = i % cols;
         const row = Math.floor(i / cols);
-        const jitterX = Math.random() * Math.min(cellW - 400, 600);
-        const jitterY = Math.random() * Math.min(cellH - 300, 400);
-        const x = 100 + col * cellW + jitterX;
-        const y = 100 + row * cellH + jitterY;
+        const jitterX = Math.random() * Math.max(0, cellW - 480);
+        const jitterY = Math.random() * Math.max(0, cellH - 360);
+        let x = PLOT_X + col * cellW + jitterX;
+        let y = PLOT_Y + row * cellH + jitterY;
         const plot = buildPlot(m, x, y);
+        const w = parseInt(plot.style.width);
+        const h = parseInt(plot.style.height);
+        // keep the plot fully inside the centered region
+        x = Math.min(x, PLOT_X + PLOT_W - w);
+        y = Math.min(y, PLOT_Y + PLOT_H - h);
+        plot.style.left = x + 'px';
+        plot.style.top = y + 'px';
         canvas.appendChild(plot);
-        placed.push({ x, y, w: parseInt(plot.style.width), h: parseInt(plot.style.height) });
+        placed.push({ x, y, w, h });
     });
 
     // avoid overlaps
@@ -188,17 +212,34 @@ async function init() {
         );
     }
 
-    // scatter other elements
-    const SCATTER_W = 2500;
-    const SCATTER_H = 1300;
+    // scatter html elements
+    const scatteredEls = Array.from(document.querySelectorAll('.scattered'));
+    // shuffle order
+    for (let i = scatteredEls.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [scatteredEls[i], scatteredEls[j]] = [scatteredEls[j], scatteredEls[i]];
+    }
+    const sides = ['top', 'right', 'bottom', 'left'];
 
-    document.querySelectorAll('.scattered').forEach(el => {
+    scatteredEls.forEach((el, i) => {
         const w = el.offsetWidth || 200;
         const h = el.offsetHeight || 40;
+        const side = sides[i % sides.length];
         let x, y, attempts = 0;
         do {
-            x = Math.random() * (SCATTER_W - w) + 50;
-            y = Math.random() * (SCATTER_H - h) + 50;
+            if (side === 'top') {
+                x = PLOT_X + Math.random() * Math.max(0, PLOT_W - w);
+                y = PLOT_Y - FRAME_GAP - h - Math.random() * FRAME_THICK;
+            } else if (side === 'bottom') {
+                x = PLOT_X + Math.random() * Math.max(0, PLOT_W - w);
+                y = PLOT_Y + PLOT_H + FRAME_GAP + Math.random() * FRAME_THICK;
+            } else if (side === 'left') {
+                x = PLOT_X - FRAME_GAP - w - Math.random() * FRAME_THICK;
+                y = PLOT_Y + Math.random() * Math.max(0, PLOT_H - h);
+            } else {
+                x = PLOT_X + PLOT_W + FRAME_GAP + Math.random() * FRAME_THICK;
+                y = PLOT_Y + Math.random() * Math.max(0, PLOT_H - h);
+            }
             attempts++;
         } while (overlaps(x, y, w, h) && attempts < 50);
         el.style.left = x + 'px';
