@@ -1,0 +1,126 @@
+@font-face {
+    font-family: 'Computer Modern';
+    src: url('cmunrm.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Computer Modern';
+    src: url('cmunti.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+.guide {
+    font-family: 'Computer Modern', 'Georgia', serif;
+    font-size: 1.2em;
+    line-height: 1.75em;
+    color: #663606;
+    width: 50%;
+    margin-left: 20px;
+    margin-bottom: 60px;
+}
+
+.guide-entry {
+    padding-top: 20px;
+}
+
+.guide-title {
+    font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+    font-weight: normal;
+    font-size: 1.8em;
+}
+
+.entry-title {
+    font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+    font-weight: normal;   
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border: 2px solid #663606;
+    border-radius: 20px;
+    font-size: 1.2em;
+}
+
+.entry-title:hover {
+    background-color: #663606;
+    color: #fff;
+    cursor: pointer;
+}
+
+.entry-title.active {
+    background-color: #663606;
+    color: #fff;
+}
+
+.entry-desc {
+    font-size: 1.1em;
+}
+
+sub {
+    font-size: .5em;
+    vertical-align: baseline;
+    position: relative;
+    bottom: -0.01em;
+}
+
+.popup-fig {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 10;
+    background-color: #fff;
+    border: 2px solid #663606;
+    padding: 20px;
+    max-width: 350px;
+    height: auto;
+}
+
+.popup-fig img {
+    max-width: 100%;
+    display: block;
+}
+
+.fig-cap, .fig-cap a, .fig-cap a:visited, .fig-close {
+    font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+    font-size: .8em;
+    text-decoration: none;
+    color: #663606;
+}
+
+.fig-cap {
+    display: flex;
+    justify-content: space-between;
+}
+
+.fig-close:hover {
+    cursor: pointer;
+    opacity: .6;
+}
+
+#exception {
+    font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
+    font-weight: normal;   
+    text-transform: uppercase;
+}
+
+#highlight .word {
+    color: transparent;
+}
+
+#highlight .word.preview {
+    color: #663606;
+    opacity: 0.4;
+}
+
+#highlight .word.revealed {
+    color: #663606;
+}
+
+@media (max-width: 768px) {
+    .guide {
+        width: 80%;
+        margin: 0 auto;
+        padding-bottom: 300px;
+    }
+}
