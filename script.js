@@ -160,8 +160,8 @@ async function init() {
     }
 
     // central region for member plots
-    const PLOT_W = 2200;
-    const PLOT_H = 1600;
+    const PLOT_W = 2600;
+    const PLOT_H = 1800;
     const PLOT_X = (CANVAS_W - PLOT_W) / 2;
     const PLOT_Y = (CANVAS_H - PLOT_H) / 2;
 
@@ -169,9 +169,10 @@ async function init() {
     const FRAME_GAP = 80;
     const FRAME_THICK = 380;
 
-    const targetW = PLOT_W + 2 * (FRAME_GAP + FRAME_THICK);
-    const targetH = PLOT_H + 2 * (FRAME_GAP + FRAME_THICK);
-    const fitZoom = Math.min(window.innerWidth / targetW, window.innerHeight / targetH) * 0.95;
+    const FIT_PAD = 60;
+    const targetW = PLOT_W + 2 * FIT_PAD;
+    const targetH = PLOT_H + 2 * FIT_PAD;
+    const fitZoom = Math.min(window.innerWidth / targetW, window.innerHeight / targetH);
     zoom = Math.max(0.3, Math.min(1, fitZoom));
     pan.x = window.innerWidth / 2 - (PLOT_X + PLOT_W / 2) * zoom;
     pan.y = window.innerHeight / 2 - (PLOT_Y + PLOT_H / 2) * zoom;

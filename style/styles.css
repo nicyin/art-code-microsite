@@ -85,11 +85,17 @@ body.is-dragging * {
 .plot a {
     color: var(--fg);
     text-decoration: none;
+    position: relative;
+    z-index: 1;
 }
 
 .plot a,
 .plot img {
     pointer-events: none;
+}
+
+.plot img {
+    z-index: 0;
 }
 
 #coords {
