@@ -4,6 +4,18 @@ const coordsEl = document.getElementById('coords');
 const CANVAS_W = 4000;
 const CANVAS_H = 3000;
 
+const TITLE_CX = CANVAS_W / 2;
+const TITLE_CY = CANVAS_H / 2;
+const TITLE_PAD_W = 100;
+const TITLE_PAD_H = 100;
+
+function inTitleZone(x, y, w, h) {
+    return x < TITLE_CX + TITLE_PAD_W &&
+        x + w > TITLE_CX - TITLE_PAD_W &&
+        y < TITLE_CY + TITLE_PAD_H &&
+        y + h > TITLE_CY - TITLE_PAD_H;
+}
+
 // central region for member plots
 const PLOT_W = 2600;
 const PLOT_H = 1800;
@@ -120,20 +132,49 @@ document.addEventListener('wheel', e => {
 }, { passive: false });
 
 let touchStart = null;
+let pinchStart = null;
+
 document.addEventListener('touchstart', e => {
-    if (e.touches.length === 1) {
+    if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStart = {
+            dist: Math.hypot(dx, dy),
+            zoom,
+            midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+            midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+            pan: { ...pan }
+        };
+        touchStart = null;
+    } else if (e.touches.length === 1) {
         touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         panStart = { ...pan };
+        pinchStart = null;
     }
 });
+
 document.addEventListener('touchmove', e => {
-    if (!touchStart || e.touches.length !== 1) return;
     e.preventDefault();
-    pan.x = panStart.x + (e.touches[0].clientX - touchStart.x);
-    pan.y = panStart.y + (e.touches[0].clientY - touchStart.y);
-    applyTransform();
+    if (pinchStart && e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const newZoom = Math.min(2.5, Math.max(0.3, pinchStart.zoom * (dist / pinchStart.dist)));
+        pan.x = pinchStart.midX - (newZoom / pinchStart.zoom) * (pinchStart.midX - pinchStart.pan.x);
+        pan.y = pinchStart.midY - (newZoom / pinchStart.zoom) * (pinchStart.midY - pinchStart.pan.y);
+        zoom = newZoom;
+        applyTransform();
+    } else if (touchStart && e.touches.length === 1) {
+        pan.x = panStart.x + (e.touches[0].clientX - touchStart.x);
+        pan.y = panStart.y + (e.touches[0].clientY - touchStart.y);
+        applyTransform();
+    }
 }, { passive: false });
-document.addEventListener('touchend', () => { touchStart = null; });
+
+document.addEventListener('touchend', e => {
+    if (e.touches.length < 2) pinchStart = null;
+    if (e.touches.length === 0) touchStart = null;
+});
 
 let degrees = ['135deg', '90deg', 'to top', 'to left', '45deg', '180deg'];
 let endColors = ['#ffffff', '#ff5af48d', 'transparent', '#0055ff78'];
@@ -161,12 +202,117 @@ function buildPlot(member, x, y) {
     plot.dataset.baseW = baseW;
     plot.style.height = heights[Math.floor(Math.random() * heights.length)] + 'px';
     plot.style.setProperty('--mass', (0.5 + Math.random()).toFixed(2));
-    plot.innerHTML = `<a href="members/${member.slug}/">${member.name}<br><em>${member.tagline}</em>`;
+    plot.innerHTML = `<a href="m/${member.slug}/">${member.name}<br><em>${member.tagline}</em>`;
     if (member.image) {
         plot.innerHTML += `<img src="${member.image}" style="padding-left: 25px; max-width: 66%; max-height: 66%;" alt="${member.name}">`;
     }
     plot.innerHTML += `</a><div class="resize-handle"></div>`;
     return plot;
+}
+
+// Shared placement function used by both init and reshuffle
+function placePlots(plots, mult) {
+    const PAD = 20;
+    const placed = [];
+
+    // Add title zone as a pre-placed obstacle
+    placed.push({
+        x: TITLE_CX - TITLE_PAD_W,
+        y: TITLE_CY - TITLE_PAD_H,
+        w: TITLE_PAD_W * 2,
+        h: TITLE_PAD_H * 2
+    });
+
+    function fits(x, y, w, h) {
+        if (x < PLOT_X || y < PLOT_Y || x + w > PLOT_X + PLOT_W || y + h > PLOT_Y + PLOT_H) return false;
+        return !placed.some(p =>
+            x < p.x + p.w + PAD && x + w + PAD > p.x &&
+            y < p.y + p.h + PAD && y + h + PAD > p.y
+        );
+    }
+
+    plots.forEach((plot, i) => {
+        // pick random size
+        let baseW = widths[Math.floor(Math.random() * widths.length)];
+        let baseH = heights[Math.floor(Math.random() * heights.length)];
+        let w = baseW * mult;
+        let h = baseH;
+
+        plot.style.setProperty('--mass', (0.5 + Math.random()).toFixed(2));
+
+        // try progressively smaller sizes if needed
+        const sizeOptions = [
+            [baseW, baseH],
+            [widths[1], heights[1]],
+            [widths[0], heights[0]],
+        ];
+
+        let x, y, placed_ok = false;
+
+        outer:
+        for (const [sw, sh] of sizeOptions) {
+            w = sw * mult;
+            h = sh;
+            baseW = sw;
+            baseH = sh;
+
+            // Stratified random: divide plot region into a coarse grid of
+            // candidate anchor points, shuffle them, then try each with jitter
+            const STRIDE = 80;
+            const anchorCols = Math.floor(PLOT_W / STRIDE);
+            const anchorRows = Math.floor(PLOT_H / STRIDE);
+            const anchors = [];
+            for (let r = 0; r < anchorRows; r++) {
+                for (let c = 0; c < anchorCols; c++) {
+                    anchors.push([
+                        PLOT_X + c * STRIDE + Math.random() * STRIDE,
+                        PLOT_Y + r * STRIDE + Math.random() * STRIDE
+                    ]);
+                }
+            }
+            // shuffle anchors
+            for (let k = anchors.length - 1; k > 0; k--) {
+                const j = Math.floor(Math.random() * (k + 1));
+                [anchors[k], anchors[j]] = [anchors[j], anchors[k]];
+            }
+
+            // only test a reasonable number of candidates
+            const limit = Math.min(anchors.length, 120);
+            for (let k = 0; k < limit; k++) {
+                let cx = anchors[k][0];
+                let cy = anchors[k][1];
+                cx = Math.min(cx, PLOT_X + PLOT_W - w);
+                cy = Math.min(cy, PLOT_Y + PLOT_H - h);
+                if (fits(cx, cy, w, h)) {
+                    x = cx; y = cy;
+                    baseW = sw; baseH = sh;
+                    placed_ok = true;
+                    break outer;
+                }
+            }
+        }
+
+        // last resort: place at a grid position ignoring overlaps
+        if (!placed_ok) {
+            const cols = Math.ceil(Math.sqrt(plots.length));
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            w = widths[0] * mult;
+            h = heights[0];
+            baseW = widths[0];
+            x = PLOT_X + col * (PLOT_W / cols);
+            y = PLOT_Y + row * (PLOT_H / Math.ceil(plots.length / cols));
+            x = Math.min(x, PLOT_X + PLOT_W - w);
+            y = Math.min(y, PLOT_Y + PLOT_H - h);
+        }
+
+        plot.dataset.baseW = baseW;
+        plot.style.width = w + 'px';
+        plot.style.height = h + 'px';
+        plot.style.left = x + 'px';
+        plot.style.top = y + 'px';
+        placed.push({ x, y, w, h });
+    });
 }
 
 async function init() {
@@ -186,7 +332,7 @@ async function init() {
     const targetW = PLOT_W + 2 * FIT_PAD;
     const targetH = PLOT_H + 2 * FIT_PAD;
     const fitZoom = Math.min(window.innerWidth / targetW, window.innerHeight / targetH);
-    zoom = Math.max(0.3, Math.min(1, fitZoom));
+    zoom = Math.max(0.3, Math.min(window.innerWidth < 768 ? 0.5 : 1, fitZoom));
     pan.x = window.innerWidth / 2 - (PLOT_X + PLOT_W / 2) * zoom;
     pan.y = window.innerHeight / 2 - (PLOT_Y + PLOT_H / 2) * zoom;
 
@@ -197,25 +343,13 @@ async function init() {
     const cellH = PLOT_H / rows;
 
     const placed = [];
-
-    members.forEach((m, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const jitterX = Math.random() * Math.max(0, cellW - 480);
-        const jitterY = Math.random() * Math.max(0, cellH - 360);
-        let x = PLOT_X + col * cellW + jitterX;
-        let y = PLOT_Y + row * cellH + jitterY;
-        const plot = buildPlot(m, x, y);
-        const w = parseInt(plot.style.width);
-        const h = parseInt(plot.style.height);
-        // keep the plot fully inside the centered region
-        x = Math.min(x, PLOT_X + PLOT_W - w);
-        y = Math.min(y, PLOT_Y + PLOT_H - h);
-        plot.style.left = x + 'px';
-        plot.style.top = y + 'px';
+    const plotEls = [];
+    members.forEach((m) => {
+        const plot = buildPlot(m, 0, 0);
         canvas.appendChild(plot);
-        placed.push({ x, y, w, h });
+        plotEls.push(plot);
     });
+    placePlots(plotEls, 1);
 
     // avoid overlaps
     function overlaps(x, y, w, h) {
@@ -327,39 +461,41 @@ searchForm.addEventListener('submit', e => {
 });
 setMarquee('art and code!');
 
-// reshuffle existing plots: re-randomize sizes + masses, lay out in fresh grid
+// bottom marquee
+(function () {
+    const bottomTrack = document.querySelector('#marquee-bottom .track');
+    const text = '[Website Title TBD]';
+
+    const probe = document.createElement('span');
+    probe.className = 'cell';
+    probe.textContent = text;
+    bottomTrack.appendChild(probe);
+    const cellW = probe.offsetWidth || 120;
+
+    const copies = Math.max(6, Math.ceil(window.innerWidth / cellW) + 2);
+    for (let i = 1; i < copies; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'cell';
+        cell.textContent = text;
+        bottomTrack.appendChild(cell);
+    }
+
+    document.documentElement.style.setProperty('--marquee-bottom-shift', `-${(100 / copies).toFixed(4)}%`);
+    document.documentElement.style.setProperty('--marquee-bottom-duration', `${(cellW / MARQUEE_SPEED).toFixed(2)}s`);
+
+    bottomTrack.style.animation = 'none';
+    void bottomTrack.offsetWidth;
+    bottomTrack.style.animation = 'marquee-bottom var(--marquee-bottom-duration, 2s) linear infinite';
+})();
+
 function reshufflePlots() {
     const plots = Array.from(document.querySelectorAll('.plot'));
+    // shuffle order
     for (let i = plots.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [plots[i], plots[j]] = [plots[j], plots[i]];
     }
-    const mult = widthMult();
-    plots.forEach(plot => {
-        const baseW = widths[Math.floor(Math.random() * widths.length)];
-        plot.dataset.baseW = baseW;
-        plot.style.width = (baseW * mult) + 'px';
-        plot.style.height = heights[Math.floor(Math.random() * heights.length)] + 'px';
-        plot.style.setProperty('--mass', (0.5 + Math.random()).toFixed(2));
-    });
-    const cols = Math.ceil(Math.sqrt(plots.length));
-    const rows = Math.ceil(plots.length / cols);
-    const cellW = PLOT_W / cols;
-    const cellH = PLOT_H / rows;
-    plots.forEach((plot, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const w = parseInt(plot.style.width) || 400;
-        const h = parseInt(plot.style.height) || 300;
-        const jitterX = Math.random() * Math.max(0, cellW - w);
-        const jitterY = Math.random() * Math.max(0, cellH - h);
-        let x = PLOT_X + col * cellW + jitterX;
-        let y = PLOT_Y + row * cellH + jitterY;
-        x = Math.min(x, PLOT_X + PLOT_W - w);
-        y = Math.min(y, PLOT_Y + PLOT_H - h);
-        plot.style.left = x + 'px';
-        plot.style.top = y + 'px';
-    });
+    placePlots(plots, widthMult());
 }
 
 // title buttons: NEW INC -> reshuffle, Art and Code -> toggle about panel

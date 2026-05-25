@@ -305,6 +305,35 @@ body.is-dragging .plot {
     display: none;
 }
 
+#marquee-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+}
+
+#marquee-bottom .track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: marquee var(--marquee-bottom-duration, 2s) linear infinite;
+}
+
+#marquee-bottom .cell {
+    padding-right: 1.5em;
+}
+
+#marquee-bottom:has(.track:empty) {
+    display: none;
+}
+
 @keyframes marquee {
     from {
         transform: translateX(0);
@@ -312,5 +341,52 @@ body.is-dragging .plot {
 
     to {
         transform: translateX(var(--marquee-shift, -8.3333%));
+    }
+}
+
+@keyframes marquee-bottom {
+    from {
+        transform: translateX(var(--marquee-bottom-shift, -8.3333%));
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        font-size: 15px;
+    }
+
+    #marquee,
+    #marquee-bottom {
+        font-size: 14px;
+        height: 32px;
+    }
+
+    #title button {
+        font-size: 15px;
+        padding: 6px 12px;
+    }
+
+    #about textarea {
+        width: 220px;
+    }
+
+    .plot {
+        /* smaller default feel on mobile */
+        font-size: 13px;
+        padding: 8px;
+    }
+
+    #coords {
+        display: none;
+    }
+
+    #slider-v {
+        display: none;
     }
 }
