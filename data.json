@@ -9,7 +9,7 @@
         "name": "Anna Zhang",
         "slug": "anna-zhang",
         "tagline": "Orientation Over Optimization: Prompted, an AI you think with, not one that thinks for you",
-        "image": "members/anna-zhang/assets/Prompted-Hero.png",
+        "image": "m/anna-zhang/assets/Prompted-Hero.png",
         "accent": "#a5b4fc"
     },
     {
@@ -23,7 +23,7 @@
         "name": "Karlie Zhao",
         "slug": "karlie",
         "tagline": "Sounding Textiles",
-        "image": "members/karlie/assets/01sm.png",
+        "image": "m/karlie/assets/01sm.png",
         "accent": "#f9ff4c"
     },
     {
@@ -36,7 +36,13 @@
         "name": "Nicci Yin",
         "slug": "nicci",
         "tagline": "Notes on misusing interfaces",
-        "image": "members/nicci/assets/test.png",
+        "image": "m/nicci/assets/test.png",
         "accent": "white"
+    },
+    {
+        "name": "Tara Kelton",
+        "slug": "tara-kelton",
+        "tagline": "Microrest",
+        "accent": "#eeeded"
     }
 ]
