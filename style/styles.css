@@ -353,3 +353,40 @@ body.is-dragging .plot {
         transform: translateX(0);
     }
 }
+
+@media (max-width: 768px) {
+
+    html,
+    body {
+        font-size: 15px;
+    }
+
+    #marquee,
+    #marquee-bottom {
+        font-size: 14px;
+        height: 32px;
+    }
+
+    #title button {
+        font-size: 15px;
+        padding: 6px 12px;
+    }
+
+    #about textarea {
+        width: 220px;
+    }
+
+    .plot {
+        /* smaller default feel on mobile */
+        font-size: 13px;
+        padding: 8px;
+    }
+
+    #coords {
+        display: none;
+    }
+
+    #slider-v {
+        display: none;
+    }
+}
