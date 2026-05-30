@@ -44,5 +44,11 @@
         "slug": "tara-kelton",
         "tagline": "Microrest",
         "accent": "#eeeded"
+    },
+    {
+        "name": "Morry Kolman",
+        "slug": "morry",
+        "tagline": "First Light: Emergence",
+        "accent": "#000000"
     }
 ]
